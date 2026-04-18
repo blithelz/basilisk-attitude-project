@@ -10,6 +10,8 @@ from typing import Any
 import numpy as np
 from Basilisk.utilities import macros, orbitalMotion, vizSupport
 
+from src.modes.hill_point import apply_hill_point_control_gains, get_mode_request
+
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
@@ -93,9 +95,10 @@ class HillPointBaselineScenario(BSKSim, BSKScenario):
             )
 
     def apply_control_gains(self) -> None:
-        """Override the baseline feedback gains from the project config."""
-        gains = self.config["control"]["mrp_feedback"]
+        """Apply the baseline hill-pointing mode settings."""
         fsw_model = self.get_FswModel()
+        apply_hill_point_control_gains(fsw_model, self.config)
+        return
 
         # 官方示例里有两个 MRP 反馈控制器，这里统一从配置覆盖参数。
         for controller in (fsw_model.mrpFeedbackControl, fsw_model.mrpFeedbackRWs):
@@ -200,7 +203,7 @@ def run_scenario(config: dict[str, Any]) -> list[Path]:
     """Run the baseline hill-pointing scenario from the project config."""
     scenario = HillPointBaselineScenario(config)
     scenario.InitializeSimulation()
-    scenario.modeRequest = config["scenario"]["mode_request"]
+    scenario.modeRequest = get_mode_request(config)
 
     duration_minutes = config["simulation"]["duration_minutes"]
     scenario.ConfigureStopTime(macros.min2nano(duration_minutes))
