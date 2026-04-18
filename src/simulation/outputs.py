@@ -1,4 +1,4 @@
-"""Output helpers for project-local Basilisk simulation scenarios."""
+﻿"""Output helpers for project-local Basilisk simulation scenarios."""
 
 from __future__ import annotations
 
@@ -11,8 +11,13 @@ from src.actuators.reaction_wheels import extract_reaction_wheel_history, get_re
 from src.sensors.simple_nav import extract_navigation_history
 
 
-def extract_guidance_history(att_ref_rec: Any, att_err_rec: Any) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+def extract_guidance_history(
+    att_ref_rec: Any,
+    att_err_rec: Any,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Return reference attitude and tracking-error histories."""
+    # 这里把“目标姿态”和“姿态误差”统一拆出来，
+    # 方便后面的 plot 函数只关心数组，不再关心消息对象。
     sigma_rn = np.delete(att_ref_rec.sigma_RN, 0, 0)
     omega_rn_n = np.delete(att_ref_rec.omega_RN_N, 0, 0)
     sigma_br = np.delete(att_err_rec.sigma_BR, 0, 0)
@@ -51,6 +56,8 @@ def render_baseline_outputs(
         rw_speed_rec, rw_motor_rec, num_reaction_wheels
     )
 
+    # 绘图顺序要和 figure_names 保持一致，
+    # 否则后面按序号保存图片时，文件名和图内容会对不上。
     plotter.clear_all_plots()
     plotter.plot_attitude_error(timeline, sigma_br)
     plotter.plot_rw_cmd_torque(timeline, motor_torque, num_reaction_wheels)
@@ -69,6 +76,8 @@ def render_baseline_outputs(
             "orientation",
             "attitudeGuidance",
         ]
+        # plotter.plt.figure(index + 1) 依赖前面的绘图顺序；
+        # 这也是为什么 figure_names 不能随意改顺序。
         figures = {
             f"{config['output']['file_prefix']}_{name}": plotter.plt.figure(index + 1)
             for index, name in enumerate(figure_names)

@@ -1,4 +1,4 @@
-"""Bootstrap helpers for loading the official Basilisk BSK_Sim modules."""
+﻿"""Bootstrap helpers for loading the official Basilisk BSK_Sim modules."""
 
 from __future__ import annotations
 
@@ -38,6 +38,8 @@ def bootstrap_bsk_paths() -> Path:
         str(bsk_sim_root / "plotting"),
     ]
 
+    # 这些目录必须先进入 sys.path，
+    # 后面的 BSK_masters / BSK_Dynamics / BSK_Fsw 才能正常导入。
     for path in reversed(extra_paths):
         if path not in sys.path:
             sys.path.insert(0, path)
@@ -47,6 +49,8 @@ def bootstrap_bsk_paths() -> Path:
 
 BSK_SIM_ROOT = bootstrap_bsk_paths()
 
+# 这里集中导入官方 BSK_Sim 模块，
+# 这样项目里的场景文件就不需要重复处理路径和 import 细节。
 from BSK_masters import BSKScenario, BSKSim  # noqa: E402
 import BSK_Dynamics  # noqa: E402
 import BSK_Fsw  # noqa: E402

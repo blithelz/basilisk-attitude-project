@@ -1,4 +1,4 @@
-"""SimpleNav sensor helpers for the project baseline scenario."""
+﻿"""SimpleNav sensor helpers for the project baseline scenario."""
 
 from __future__ import annotations
 
@@ -13,6 +13,8 @@ def configure_spacecraft_initial_state(dyn_model: Any, config: dict[str, Any]) -
     orbit_cfg = config["orbit"]
     attitude_cfg = config["attitude"]
 
+    # 配置文件里给的是经典轨道根数；
+    # Basilisk 真正初始化航天器平动时需要的是 r/v 向量。
     oe = orbitalMotion.ClassicElements()
     oe.a = orbit_cfg["a_m"]
     oe.e = orbit_cfg["e"]
@@ -26,6 +28,7 @@ def configure_spacecraft_initial_state(dyn_model: Any, config: dict[str, Any]) -
 
     dyn_model.scObject.hub.r_CN_NInit = r_n
     dyn_model.scObject.hub.v_CN_NInit = v_n
+    # sigma_BNInit 和 omega_BN_BInit 分别是机体初始姿态和角速度。
     dyn_model.scObject.hub.sigma_BNInit = [[value] for value in attitude_cfg["sigma_BN_init"]]
     dyn_model.scObject.hub.omega_BN_BInit = [
         [value] for value in attitude_cfg["omega_BN_B_init_rad_s"]
@@ -38,6 +41,8 @@ def attach_navigation_recorders(
     sampling_time: int,
 ) -> tuple[Any, Any]:
     """Create and register the SimpleNav attitude and translation recorders."""
+    # 这里记录的是“理想导航器”输出，
+    # 也就是 FSW 实际看到的姿态/轨道信息。
     att_nav_rec = dyn_model.simpleNavObject.attOutMsg.recorder(sampling_time)
     trans_nav_rec = dyn_model.simpleNavObject.transOutMsg.recorder(sampling_time)
 
@@ -51,6 +56,7 @@ def extract_navigation_history(
     trans_nav_rec: Any,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Return body attitude, position, and velocity histories from SimpleNav."""
+    # 后面的姿态图和轨道姿态联合图都会用到这三组量。
     sigma_bn = np.delete(att_nav_rec.sigma_BN, 0, 0)
     r_bn_n = np.delete(trans_nav_rec.r_BN_N, 0, 0)
     v_bn_n = np.delete(trans_nav_rec.v_BN_N, 0, 0)
