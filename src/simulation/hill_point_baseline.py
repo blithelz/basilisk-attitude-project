@@ -10,6 +10,11 @@ from typing import Any
 import numpy as np
 from Basilisk.utilities import macros, orbitalMotion, vizSupport
 
+from src.actuators.reaction_wheels import (
+    attach_reaction_wheel_recorders,
+    extract_reaction_wheel_history,
+    get_reaction_wheel_count,
+)
 from src.modes.hill_point import apply_hill_point_control_gains, get_mode_request
 
 
@@ -72,7 +77,8 @@ class HillPointBaselineScenario(BSKSim, BSKScenario):
         self.transNavRec = None
         self.attErrRec = None
         self.attRefRec = None
-        self.LrRec = None
+        self.rwSpeedRec = None
+        self.rwMotorRec = None
 
         self.results_dir = (REPO_ROOT / config["output"]["results_dir"]).resolve()
         self.results_dir.mkdir(parents=True, exist_ok=True)
@@ -141,13 +147,14 @@ class HillPointBaselineScenario(BSKSim, BSKScenario):
         self.transNavRec = dyn_model.simpleNavObject.transOutMsg.recorder(sampling_time)
         self.attRefRec = fsw_model.attRefMsg.recorder(sampling_time)
         self.attErrRec = fsw_model.attGuidMsg.recorder(sampling_time)
-        self.LrRec = fsw_model.cmdTorqueMsg.recorder(sampling_time)
+        self.rwSpeedRec, self.rwMotorRec = attach_reaction_wheel_recorders(
+            self, dyn_model, fsw_model, sampling_time
+        )
 
         self.AddModelToTask(dyn_model.taskName, self.attNavRec)
         self.AddModelToTask(dyn_model.taskName, self.transNavRec)
         self.AddModelToTask(dyn_model.taskName, self.attRefRec)
         self.AddModelToTask(dyn_model.taskName, self.attErrRec)
-        self.AddModelToTask(dyn_model.taskName, self.LrRec)
 
     def save_figures(self, figures: dict[str, Any]) -> list[Path]:
         """Persist generated matplotlib figures into the project results folder."""
@@ -160,6 +167,7 @@ class HillPointBaselineScenario(BSKSim, BSKScenario):
 
     def pull_outputs(self, show_plots: bool, save_plots: bool) -> list[Path]:
         """Convert recorders into plots and optionally save them."""
+        num_reaction_wheels = get_reaction_wheel_count(self.config)
         sigma_bn = np.delete(self.attNavRec.sigma_BN, 0, 0)
         r_bn_n = np.delete(self.transNavRec.r_BN_N, 0, 0)
         v_bn_n = np.delete(self.transNavRec.v_BN_N, 0, 0)
@@ -168,13 +176,15 @@ class HillPointBaselineScenario(BSKSim, BSKScenario):
         omega_rn_n = np.delete(self.attRefRec.omega_RN_N, 0, 0)
         sigma_br = np.delete(self.attErrRec.sigma_BR, 0, 0)
         omega_br_b = np.delete(self.attErrRec.omega_BR_B, 0, 0)
-        torque_request = np.delete(self.LrRec.torqueRequestBody, 0, 0)
+        timeline, wheel_speeds, motor_torque = extract_reaction_wheel_history(
+            self.rwSpeedRec, self.rwMotorRec, num_reaction_wheels
+        )
 
         BSK_plt.clear_all_plots()
-        timeline = np.delete(self.attNavRec.times(), 0, 0) * macros.NANO2MIN
         BSK_plt.plot_attitude_error(timeline, sigma_br)
-        BSK_plt.plot_control_torque(timeline, torque_request)
+        BSK_plt.plot_rw_cmd_torque(timeline, motor_torque, num_reaction_wheels)
         BSK_plt.plot_rate_error(timeline, omega_br_b)
+        BSK_plt.plot_rw_speeds(timeline, wheel_speeds, num_reaction_wheels)
         BSK_plt.plot_orientation(timeline, r_bn_n, v_bn_n, sigma_bn)
         BSK_plt.plot_attitudeGuidance(timeline, sigma_rn, omega_rn_n)
 
@@ -184,6 +194,7 @@ class HillPointBaselineScenario(BSKSim, BSKScenario):
                 "attitudeErrorNorm",
                 "rwMotorTorque",
                 "rateError",
+                "rwSpeed",
                 "orientation",
                 "attitudeGuidance",
             ]

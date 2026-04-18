@@ -28,6 +28,10 @@ attitude:
   sigma_BN_init: [0.1, 0.2, -0.3]
   omega_BN_B_init_rad_s: [0.001, -0.01, 0.03]
 
+actuators:
+  reaction_wheels:
+    count: 4
+
 control:
   mrp_feedback:
     K: 3.5
