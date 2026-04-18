@@ -1,0 +1,35 @@
+scenario:
+  name: scenario_hill_point_baseline
+  mode_request: hillPoint
+
+simulation:
+  dyn_rate_sec: 0.1
+  fsw_rate_sec: 0.1
+  duration_minutes: 10.0
+
+output:
+  show_plots: false
+  save_plots: true
+  results_dir: results/scenario_hill_point_baseline
+  file_prefix: hill_point_baseline
+
+visualization:
+  enable_unity_viz: false
+
+orbit:
+  a_m: 10000000.0
+  e: 0.1
+  i_deg: 33.3
+  Omega_deg: 48.2
+  omega_deg: 347.8
+  f_deg: 85.3
+
+attitude:
+  sigma_BN_init: [0.1, 0.2, -0.3]
+  omega_BN_B_init_rad_s: [0.001, -0.01, 0.03]
+
+control:
+  mrp_feedback:
+    K: 3.5
+    Ki: -1.0
+    P: 30.0

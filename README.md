@@ -51,3 +51,26 @@ basilisk-attitude-project/
 - 一个基于官方示例改造的自定义场景脚本
 - 至少一组可以复现实验结果的配置文件
 - 一份能够说明姿态误差和控制力矩变化趋势的输出图
+
+## 基线场景
+
+当前仓库已经提供一个项目内的基线场景入口：
+
+- `scenarios/scenario_hill_point_baseline.py`
+- `configs/baseline.yaml`
+- `scripts/run_baseline.sh`
+
+建议使用方式：
+
+```bash
+cd /mnt/e/WSL/basilisk-attitude-project
+bash scripts/run_baseline.sh
+```
+
+如果想显式指定配置文件：
+
+```bash
+cd /mnt/e/WSL/basilisk-attitude-project
+source /home/llizhi/avslab/basilisk-develop/.venv-linux/bin/activate
+python3 scenarios/scenario_hill_point_baseline.py --config configs/baseline.yaml
+```
