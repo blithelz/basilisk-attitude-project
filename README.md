@@ -20,13 +20,6 @@
 2. 在本仓库中编写自己的场景、配置和测试
 3. 将成熟的控制链路从官方示例逐步迁移为自己的模块化实现
 
-参考命令：
-
-```bash
-cd /home/llizhi/avslab/basilisk-develop
-source .venv-linux/bin/activate
-cd /mnt/e/WSL/basilisk-attitude-project
-```
 
 ## 目录结构
 
@@ -60,17 +53,4 @@ basilisk-attitude-project/
 - `configs/baseline.yaml`
 - `scripts/run_baseline.sh`
 
-建议使用方式：
 
-```bash
-cd /mnt/e/WSL/basilisk-attitude-project
-bash scripts/run_baseline.sh
-```
-
-如果想显式指定配置文件：
-
-```bash
-cd /mnt/e/WSL/basilisk-attitude-project
-source /home/llizhi/avslab/basilisk-develop/.venv-linux/bin/activate
-python3 scenarios/scenario_hill_point_baseline.py --config configs/baseline.yaml
-```
