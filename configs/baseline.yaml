@@ -16,6 +16,10 @@ output:
 visualization:
   enable_unity_viz: false
 
+sensors:
+  navigation:
+    provider: simple_nav
+
 orbit:
   a_m: 10000000.0
   e: 0.1

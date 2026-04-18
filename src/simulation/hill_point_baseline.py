@@ -2,66 +2,21 @@
 
 from __future__ import annotations
 
-import os
-import sys
 from pathlib import Path
 from typing import Any
 
-import numpy as np
-from Basilisk.utilities import macros, orbitalMotion, vizSupport
+from Basilisk.utilities import macros, vizSupport
 
 from src.actuators.reaction_wheels import (
     attach_reaction_wheel_recorders,
-    extract_reaction_wheel_history,
-    get_reaction_wheel_count,
 )
 from src.modes.hill_point import apply_hill_point_control_gains, get_mode_request
-
-
-REPO_ROOT = Path(__file__).resolve().parents[2]
-
-
-def resolve_bsk_sim_root() -> Path:
-    """Find the official Basilisk BSK_Sim example root used as the baseline."""
-    candidates = []
-
-    env_path = os.environ.get("BASILISK_BSKSIM_ROOT")
-    if env_path:
-        candidates.append(Path(env_path))
-
-    candidates.append(Path.home() / "avslab" / "basilisk-develop" / "examples" / "BskSim")
-
-    for candidate in candidates:
-        if (candidate / "BSK_masters.py").exists():
-            return candidate.resolve()
-
-    raise FileNotFoundError(
-        "Could not find the Basilisk BSK_Sim example root. "
-        "Set BASILISK_BSKSIM_ROOT or install Basilisk under ~/avslab/basilisk-develop."
-    )
-
-
-def bootstrap_bsk_paths() -> Path:
-    """Add the official BSK_Sim example directories to sys.path."""
-    bsk_sim_root = resolve_bsk_sim_root()
-    extra_paths = [
-        str(bsk_sim_root),
-        str(bsk_sim_root / "plotting"),
-    ]
-
-    for path in reversed(extra_paths):
-        if path not in sys.path:
-            sys.path.insert(0, path)
-
-    return bsk_sim_root
-
-
-BSK_SIM_ROOT = bootstrap_bsk_paths()
-
-from BSK_masters import BSKScenario, BSKSim  # noqa: E402
-import BSK_Dynamics  # noqa: E402
-import BSK_Fsw  # noqa: E402
-import BSK_Plotting as BSK_plt  # noqa: E402
+from src.sensors.simple_nav import (
+    attach_navigation_recorders,
+    configure_spacecraft_initial_state,
+)
+from src.simulation.bootstrap import BSKScenario, BSKSim, BSK_Dynamics, BSK_Fsw, BSK_plt, REPO_ROOT
+from src.simulation.outputs import render_baseline_outputs
 
 
 class HillPointBaselineScenario(BSKSim, BSKScenario):
@@ -115,27 +70,7 @@ class HillPointBaselineScenario(BSKSim, BSKScenario):
 
     def configure_initial_conditions(self) -> None:
         """Set the initial orbit and body attitude."""
-        orbit_cfg = self.config["orbit"]
-        attitude_cfg = self.config["attitude"]
-
-        oe = orbitalMotion.ClassicElements()
-        oe.a = orbit_cfg["a_m"]
-        oe.e = orbit_cfg["e"]
-        oe.i = orbit_cfg["i_deg"] * macros.D2R
-        oe.Omega = orbit_cfg["Omega_deg"] * macros.D2R
-        oe.omega = orbit_cfg["omega_deg"] * macros.D2R
-        oe.f = orbit_cfg["f_deg"] * macros.D2R
-
-        dyn_models = self.get_DynModel()
-        mu = dyn_models.gravFactory.gravBodies["earth"].mu
-        r_n, v_n = orbitalMotion.elem2rv(mu, oe)
-
-        dyn_models.scObject.hub.r_CN_NInit = r_n
-        dyn_models.scObject.hub.v_CN_NInit = v_n
-        dyn_models.scObject.hub.sigma_BNInit = [[value] for value in attitude_cfg["sigma_BN_init"]]
-        dyn_models.scObject.hub.omega_BN_BInit = [
-            [value] for value in attitude_cfg["omega_BN_B_init_rad_s"]
-        ]
+        configure_spacecraft_initial_state(self.get_DynModel(), self.config)
 
     def log_outputs(self) -> None:
         """Record the minimum data products needed for baseline validation."""
@@ -143,71 +78,31 @@ class HillPointBaselineScenario(BSKSim, BSKScenario):
         dyn_model = self.get_DynModel()
         sampling_time = fsw_model.processTasksTimeStep
 
-        self.attNavRec = dyn_model.simpleNavObject.attOutMsg.recorder(sampling_time)
-        self.transNavRec = dyn_model.simpleNavObject.transOutMsg.recorder(sampling_time)
+        self.attNavRec, self.transNavRec = attach_navigation_recorders(self, dyn_model, sampling_time)
         self.attRefRec = fsw_model.attRefMsg.recorder(sampling_time)
         self.attErrRec = fsw_model.attGuidMsg.recorder(sampling_time)
         self.rwSpeedRec, self.rwMotorRec = attach_reaction_wheel_recorders(
             self, dyn_model, fsw_model, sampling_time
         )
 
-        self.AddModelToTask(dyn_model.taskName, self.attNavRec)
-        self.AddModelToTask(dyn_model.taskName, self.transNavRec)
         self.AddModelToTask(dyn_model.taskName, self.attRefRec)
         self.AddModelToTask(dyn_model.taskName, self.attErrRec)
 
-    def save_figures(self, figures: dict[str, Any]) -> list[Path]:
-        """Persist generated matplotlib figures into the project results folder."""
-        saved_paths = []
-        for figure_name, figure in figures.items():
-            target = self.results_dir / f"{figure_name}.png"
-            figure.savefig(target, dpi=200, bbox_inches="tight")
-            saved_paths.append(target)
-        return saved_paths
-
     def pull_outputs(self, show_plots: bool, save_plots: bool) -> list[Path]:
         """Convert recorders into plots and optionally save them."""
-        num_reaction_wheels = get_reaction_wheel_count(self.config)
-        sigma_bn = np.delete(self.attNavRec.sigma_BN, 0, 0)
-        r_bn_n = np.delete(self.transNavRec.r_BN_N, 0, 0)
-        v_bn_n = np.delete(self.transNavRec.v_BN_N, 0, 0)
-
-        sigma_rn = np.delete(self.attRefRec.sigma_RN, 0, 0)
-        omega_rn_n = np.delete(self.attRefRec.omega_RN_N, 0, 0)
-        sigma_br = np.delete(self.attErrRec.sigma_BR, 0, 0)
-        omega_br_b = np.delete(self.attErrRec.omega_BR_B, 0, 0)
-        timeline, wheel_speeds, motor_torque = extract_reaction_wheel_history(
-            self.rwSpeedRec, self.rwMotorRec, num_reaction_wheels
+        return render_baseline_outputs(
+            BSK_plt,
+            self.config,
+            self.results_dir,
+            self.attNavRec,
+            self.transNavRec,
+            self.attRefRec,
+            self.attErrRec,
+            self.rwSpeedRec,
+            self.rwMotorRec,
+            show_plots,
+            save_plots,
         )
-
-        BSK_plt.clear_all_plots()
-        BSK_plt.plot_attitude_error(timeline, sigma_br)
-        BSK_plt.plot_rw_cmd_torque(timeline, motor_torque, num_reaction_wheels)
-        BSK_plt.plot_rate_error(timeline, omega_br_b)
-        BSK_plt.plot_rw_speeds(timeline, wheel_speeds, num_reaction_wheels)
-        BSK_plt.plot_orientation(timeline, r_bn_n, v_bn_n, sigma_bn)
-        BSK_plt.plot_attitudeGuidance(timeline, sigma_rn, omega_rn_n)
-
-        saved_paths: list[Path] = []
-        if save_plots:
-            figure_names = [
-                "attitudeErrorNorm",
-                "rwMotorTorque",
-                "rateError",
-                "rwSpeed",
-                "orientation",
-                "attitudeGuidance",
-            ]
-            figures = {
-                f"{self.config['output']['file_prefix']}_{name}": BSK_plt.plt.figure(index + 1)
-                for index, name in enumerate(figure_names)
-            }
-            saved_paths = self.save_figures(figures)
-
-        if show_plots:
-            BSK_plt.show_all_plots()
-
-        return saved_paths
 
 
 def run_scenario(config: dict[str, Any]) -> list[Path]:
