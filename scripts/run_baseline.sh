@@ -4,10 +4,9 @@ set -euo pipefail
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 REPO_ROOT=$(cd "${SCRIPT_DIR}/.." && pwd)
 
-# 定义一个函数，用于在指定目录下查找并验证可用的 Basilisk 虚拟环境激活脚本
+# Locate a Basilisk virtual environment and verify it can import Basilisk.
 find_venv_activate() {
-  local candidate_root="$1" # 函数的第一个参数：待搜索的候选根目录
-
+  local candidate_root="$1"
   local activate_path=""
   local python_path=""
 
@@ -21,8 +20,6 @@ find_venv_activate() {
     return 1
   fi
 
-  # 只接受真正安装了 Basilisk 的虚拟环境；
-  # 这样即使同级目录里存在别的 .venv，也不会误选进去。
   if "${python_path}" -c 'import Basilisk' >/dev/null 2>&1; then
     printf '%s\n' "${activate_path}"
     return 0
@@ -68,7 +65,3 @@ done
 python3 "${REPO_ROOT}/scenarios/scenario_hill_point_baseline.py" \
   "${CONFIG_ARGS[@]}" \
   "$@"
-# 使用虚拟环境中的 Python3 解释器执行主仿真脚本
-# 第一个参数：仿真脚本的绝对路径
-# 第二个参数：展开 CONFIG_ARGS 数组（如果未清空则包含默认 --config 配置）
-# 第三个参数：原样传递所有命令行参数（"$@" 会保持每个参数的独立性）
