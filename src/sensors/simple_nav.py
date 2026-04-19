@@ -1,38 +1,22 @@
 ﻿"""SimpleNav sensor helpers for the project baseline scenario."""
+# 模块文档字符串：为项目基准场景提供 SimpleNav 理想导航传感器相关的辅助函数
 
 from __future__ import annotations
 
 from typing import Any
 
 import numpy as np
-from Basilisk.utilities import macros, orbitalMotion
+from src.truth.orbit import apply_orbit_truth_configuration
+from src.truth.rigid_body import apply_rigid_body_truth_configuration
 
 
 def configure_spacecraft_initial_state(dyn_model: Any, config: dict[str, Any]) -> None:
-    """Apply the configured orbit and attitude initial conditions to the spacecraft."""
-    orbit_cfg = config["orbit"]
-    attitude_cfg = config["attitude"]
+    """Backward-compatible wrapper kept during the week-2 truth-layer refactor."""
 
-    # 配置文件里给的是经典轨道根数；
-    # Basilisk 真正初始化航天器平动时需要的是 r/v 向量。
-    oe = orbitalMotion.ClassicElements()
-    oe.a = orbit_cfg["a_m"]
-    oe.e = orbit_cfg["e"]
-    oe.i = orbit_cfg["i_deg"] * macros.D2R
-    oe.Omega = orbit_cfg["Omega_deg"] * macros.D2R
-    oe.omega = orbit_cfg["omega_deg"] * macros.D2R
-    oe.f = orbit_cfg["f_deg"] * macros.D2R
-
-    mu = dyn_model.gravFactory.gravBodies["earth"].mu
-    r_n, v_n = orbitalMotion.elem2rv(mu, oe)
-
-    dyn_model.scObject.hub.r_CN_NInit = r_n
-    dyn_model.scObject.hub.v_CN_NInit = v_n
-    # sigma_BNInit 和 omega_BN_BInit 分别是机体初始姿态和角速度。
-    dyn_model.scObject.hub.sigma_BNInit = [[value] for value in attitude_cfg["sigma_BN_init"]]
-    dyn_model.scObject.hub.omega_BN_BInit = [
-        [value] for value in attitude_cfg["omega_BN_B_init_rad_s"]
-    ]
+    # 第 2 周开始，初始姿轨属于 truth layer，不再属于 sensor layer。
+    # 这里保留一个兼容包装，避免旧调用立刻失效。
+    apply_rigid_body_truth_configuration(dyn_model, config)
+    apply_orbit_truth_configuration(dyn_model, config)
 
 
 def attach_navigation_recorders(
@@ -43,20 +27,28 @@ def attach_navigation_recorders(
     """Create and register the SimpleNav attitude and translation recorders."""
     # 这里记录的是“理想导航器”输出，
     # 也就是 FSW 实际看到的姿态/轨道信息。
+
+    # 创建姿态输出消息的记录器，采样间隔为 sampling_time（单位：纳秒）
+    # attOutMsg 包含 MRP 姿态信息
     att_nav_rec = dyn_model.simpleNavObject.attOutMsg.recorder(sampling_time)
+
+    # 创建平动输出消息的记录器，采样间隔同上
+    # transOutMsg 包含位置和速度信息
     trans_nav_rec = dyn_model.simpleNavObject.transOutMsg.recorder(sampling_time)
 
     sim_base.AddModelToTask(dyn_model.taskName, att_nav_rec)
     sim_base.AddModelToTask(dyn_model.taskName, trans_nav_rec)
     return att_nav_rec, trans_nav_rec
 
-
+# 定义函数，从记录器中提取 SimpleNav 的姿态、位置、速度历史数据
 def extract_navigation_history(
     att_nav_rec: Any,
     trans_nav_rec: Any,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Return body attitude, position, and velocity histories from SimpleNav."""
     # 后面的姿态图和轨道姿态联合图都会用到这三组量。
+
+    # 从姿态记录器中获取 MRP 历史数据，删除第 0 行（初始冗余采样），形状为 (N, 3)
     sigma_bn = np.delete(att_nav_rec.sigma_BN, 0, 0)
     r_bn_n = np.delete(trans_nav_rec.r_BN_N, 0, 0)
     v_bn_n = np.delete(trans_nav_rec.v_BN_N, 0, 0)

@@ -1,43 +1,57 @@
+# 场景配置部分
 scenario:
-  name: scenario_hill_point_baseline
-  mode_request: hillPoint
+  name: scenario_hill_point_baseline           # 场景唯一标识名称，用于日志、输出文件命名
+  mode_request: hillPoint                      # 期望的姿态控制模式，此处为 Hill 指向（对地定向）
 
+# 仿真时间参数
 simulation:
-  dyn_rate_sec: 0.1
-  fsw_rate_sec: 0.1
-  duration_minutes: 10.0
+  dyn_rate_sec: 0.1                            # 动力学模块的积分步长，单位：秒（100 ms）
+  fsw_rate_sec: 0.1                            # 飞控软件（FSW）模块的调用周期，单位：秒
+  duration_minutes: 10.0                       # 仿真总时长，单位：分钟
 
+# 输出控制配置
 output:
-  show_plots: false
-  save_plots: true
-  results_dir: results/scenario_hill_point_baseline
-  file_prefix: hill_point_baseline
+  show_plots: false                            # 是否在仿真结束后立即弹出交互式绘图窗口（True/False）
+  save_plots: true                             # 是否将生成的图表保存为图片文件（True/False）
+  results_dir: results/scenario_hill_point_baseline  # 存放所有输出结果的根目录（相对路径）
+  file_prefix: hill_point_baseline             # 输出文件（图片、数据）的文件名前缀
 
+# 可视化（Vizard）配置
 visualization:
-  enable_unity_viz: false
+  enable_unity_viz: false                      # 是否启用 Vizard 3D 可视化
+  live_stream: false                           # 是否启用实时流模式（仿真运行时同步显示）
+  broadcast_stream: false                      # 是否在局域网广播流（供其他设备查看）
+  no_display: false                            # 是否完全禁用图形显示（无头模式）
+  save_file: false                             # 是否将可视化数据保存为二进制记录文件
+  save_file_path: results/scenario_hill_point_baseline/vizard/hill_point_baseline.bin  # 记录文件的保存路径
 
+# 传感器配置
 sensors:
   navigation:
-    provider: simple_nav
+    provider: simple_nav                       # 导航数据来源，simple_nav 表示使用理想轨道/姿态信息（无噪声）
 
+# 轨道初始参数（开普勒轨道根数）
 orbit:
-  a_m: 10000000.0
-  e: 0.1
-  i_deg: 33.3
-  Omega_deg: 48.2
-  omega_deg: 347.8
-  f_deg: 85.3
+  a_m: 10000000.0                              # 半长轴，单位：米（10,000 km，典型 LEO 高度）
+  e: 0.1                                       # 偏心率（0.1 为轻微椭圆轨道）
+  i_deg: 33.3                                  # 轨道倾角，单位：度
+  Omega_deg: 48.2                              # 升交点赤经（RAAN），单位：度
+  omega_deg: 347.8                             # 近地点辐角，单位：度
+  f_deg: 85.3                                  # 真近点角，单位：度（初始时刻卫星在轨道上的位置）
 
+# 航天器姿态初始条件
 attitude:
-  sigma_BN_init: [0.1, 0.2, -0.3]
-  omega_BN_B_init_rad_s: [0.001, -0.01, 0.03]
+  sigma_BN_init: [0.1, 0.2, -0.3]              # 初始姿态 MRP（修正罗德里格兹参数）向量，描述体坐标系 B 相对于惯性系 N 的姿态
+  omega_BN_B_init_rad_s: [0.001, -0.01, 0.03]  # 初始角速度（体坐标系 B 下），单位：弧度/秒
 
+# 执行机构配置
 actuators:
   reaction_wheels:
-    count: 4
+    count: 4                                   # 反作用轮数量，此处使用 4 个构成金字塔冗余构型
 
+# 控制算法参数
 control:
   mrp_feedback:
-    K: 3.5
-    Ki: -1.0
-    P: 30.0
+    K: 3.5                                     # 比例增益（控制力矩与姿态误差成正比）
+    Ki: -1.0                                   # 积分增益（用于消除稳态误差，负值是为了配合 MRP 定义）
+    P: 30.0                                    # 微分增益（与角速度误差成正比，提供阻尼）

@@ -1,0 +1,34 @@
+# 轨道配置的根节点
+orbit:
+  # 中心天体参数
+  central_body:
+    # 中心天体名称（地球）
+    name: earth
+    # 地球引力常数 μ，单位：m³/s²
+    mu_m3_s2: 3.986004415e14
+    # 地球平均赤道半径，单位：米
+    radius_m: 6378136.6
+    # 是否启用 J2 摄动（非球形引力摄动）
+    use_j2: false
+    # 地球 J2 项系数（无量纲）
+    j2: 1.08262668e-3
+  # 初始轨道根数（开普勒六要素）
+  initial_elements:
+    # 半长轴，单位：米
+    semi_major_axis_m: 6878000.0
+    # 偏心率，无量纲
+    eccentricity: 0.001
+    # 轨道倾角，单位：度
+    inclination_deg: 51.6
+    # 升交点赤经（RAAN），单位：度
+    raan_deg: 15.0
+    # 近地点幅角，单位：度
+    arg_perigee_deg: 25.0
+    # 真近点角，单位：度
+    true_anomaly_deg: 40.0
+  # 轨道传播（数值积分）参数
+  propagation:
+    # 仿真总时长，单位：秒
+    duration_s: 600.0
+    # 积分步长，单位：秒
+    step_size_s: 1.0

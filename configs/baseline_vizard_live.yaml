@@ -1,0 +1,57 @@
+scenario:
+  name: scenario_hill_point_baseline
+  mode_request: hillPoint
+
+simulation:
+  dyn_rate_sec: 0.1
+  fsw_rate_sec: 0.1
+  duration_minutes: 10.0
+
+output:
+  show_plots: false
+  save_plots: true
+  results_dir: results/scenario_hill_point_baseline
+  file_prefix: hill_point_baseline
+
+visualization:
+  enable_unity_viz: true
+  live_stream: true
+  broadcast_stream: false
+  no_display: false
+  clock_sync_accel_factor: 10.0
+  save_file: false
+  save_file_path: results/scenario_hill_point_baseline/vizard/hill_point_baseline.bin
+  main_camera_target: earth
+  show_spacecraft_labels: 1
+  show_celestial_body_labels: 1
+  spacecraft_cs_on: 1
+  show_hill_frame: 1
+  orbit_lines_on: 1
+  true_trajectory_lines_on: 3
+  true_path_relative_body: earth
+
+sensors:
+  navigation:
+    provider: simple_nav
+
+orbit:
+  a_m: 10000000.0
+  e: 0.1
+  i_deg: 33.3
+  Omega_deg: 48.2
+  omega_deg: 347.8
+  f_deg: 85.3
+
+attitude:
+  sigma_BN_init: [0.1, 0.2, -0.3]
+  omega_BN_B_init_rad_s: [0.001, -0.01, 0.03]
+
+actuators:
+  reaction_wheels:
+    count: 4
+
+control:
+  mrp_feedback:
+    K: 3.5
+    Ki: -1.0
+    P: 30.0

@@ -1,0 +1,98 @@
+scenario:
+  name: scenario_leo_truth_baseline
+  mode_request: hillPoint
+
+simulation:
+  dyn_rate_sec: 0.1
+  fsw_rate_sec: 0.1
+  duration_minutes: 10.0
+
+output:
+  show_plots: false
+  save_plots: true
+  results_dir: results/scenario_leo_truth_baseline
+  file_prefix: leo_truth_baseline
+
+visualization:
+  enable_unity_viz: false
+  live_stream: false
+  broadcast_stream: false
+  no_display: false
+  save_file: false
+  save_file_path: results/scenario_leo_truth_baseline/vizard/leo_truth_baseline.bin
+
+spacecraft:
+  mass_kg: 750.0
+  inertia_kg_m2:
+    - [900.0, 0.0, 0.0]
+    - [0.0, 800.0, 0.0]
+    - [0.0, 0.0, 600.0]
+  center_of_mass_offset_b_m: [0.0, 0.0, 0.0]
+
+truth_model:
+  central_body:
+    name: earth
+    mu_m3_s2: 3.986004415e14
+    radius_m: 6378136.6
+
+orbit:
+  a_m: 6878000.0
+  e: 0.001
+  i_deg: 51.6
+  Omega_deg: 15.0
+  omega_deg: 25.0
+  f_deg: 40.0
+
+attitude:
+  sigma_BN_init: [0.1, 0.2, -0.3]
+  omega_BN_B_init_rad_s: [0.001, -0.01, 0.03]
+
+sensors:
+  navigation:
+    provider: simple_nav
+
+environment:
+  magnetic_field:
+    enabled: true
+    model: WMM
+  sun:
+    enabled: true
+    model: spice
+  eclipse:
+    enabled: true
+
+actuators:
+  reaction_wheels:
+    count: 4
+
+control:
+  mrp_feedback:
+    K: 3.5
+    Ki: -1.0
+    P: 30.0
+
+disturbances:
+  model_enabled: true
+  apply_to_dynamics: false
+  gravity_gradient:
+    enabled: true
+  aerodynamic_drag:
+    enabled: true
+    drag_coefficient: 2.2
+    reference_area_m2: 0.15
+    center_of_pressure_b_m: [0.05, 0.0, 0.02]
+    reference_density_kg_m3: 3.5e-12
+    reference_altitude_m: 400000.0
+    scale_height_m: 60000.0
+  solar_radiation_pressure:
+    enabled: true
+    reflection_coefficient: 1.3
+    reference_area_m2: 0.12
+    center_of_pressure_b_m: [0.03, 0.0, 0.01]
+    solar_pressure_n_m2: 4.56e-6
+  magnetic_residual_dipole:
+    enabled: true
+    dipole_body_a_m2: [0.05, -0.03, 0.02]
+  constant_bias:
+    enabled: false
+    torque_body_nm: [0.0, 0.0, 0.0]

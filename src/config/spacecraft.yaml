@@ -1,0 +1,37 @@
+# 航天器物理参数配置节
+spacecraft:
+  name: leo_small_sat                                      # 航天器标识名称，用于日志和文件命名
+  mass_kg: 35.0                                            # 航天器总质量，单位：千克
+  inertia_kg_m2:                                           # 航天器转动惯量矩阵（体坐标系 B 下），单位：kg·m²
+    - [0.45, 0.00, 0.00]                                   # 第一行：Ixx, Ixy, Ixz
+    - [0.00, 0.35, 0.00]                                   # 第二行：Iyx, Iyy, Iyz
+    - [0.00, 0.00, 0.25]                                   # 第三行：Izx, Izy, Izz（此处为对角阵，说明体轴与惯量主轴重合）
+  
+  # 初始姿态与角速度
+  initial_attitude:
+    mrp_bn: [0.10, -0.05, 0.08]                            # 初始 MRP 姿态参数（体坐标系 B 相对于惯性系 N），无量纲
+    omega_bn_b_rad_s: [0.002, -0.001, 0.004]               # 初始角速度（体坐标系 B 相对于惯性系 N，在体坐标系下表示），单位：弧度/秒
+  
+  # 几何尺寸与气动/光压特征参数
+  geometry:
+    drag_area_m2: 0.12                                     # 大气阻力迎风面积，单位：平方米
+    srp_area_m2: 0.10                                      # 太阳光压作用面积，单位：平方米
+    center_of_pressure_b_m: [0.02, 0.00, 0.01]             # 压心在体坐标系中的位置矢量，用于计算气动/光压力矩，单位：米
+  
+  # 磁特性参数
+  magnetic:
+    residual_dipole_b_a_m2: [0.05, -0.03, 0.02]            # 残余磁偶极矩在体坐标系中的矢量，用于计算磁干扰力矩，单位：安培·平方米
+  
+  # 干扰力矩相关参数及开关
+  disturbances:
+    drag_coefficient: 2.2                                  # 大气阻力系数（无量纲），典型取值范围 2.0 ~ 2.5
+    constant_bias_torque_b_nm: [0.0, 0.0, 0.0]             # 常值偏置力矩（体坐标系），用于模拟未建模恒定干扰，单位：牛·米
+    
+    gravity_gradient:
+      enabled: true                                        # 是否启用重力梯度力矩计算
+    drag:
+      enabled: true                                        # 是否启用气动阻力矩计算
+    solar_radiation_pressure:
+      enabled: true                                        # 是否启用太阳光压力矩计算
+    magnetic_residual_dipole:
+      enabled: true                                        # 是否启用剩余磁偶极矩产生的磁干扰力矩计算

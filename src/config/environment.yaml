@@ -1,0 +1,26 @@
+# 环境模型配置节
+environment:
+  # 太阳模型配置
+  sun:
+    model: fixed_inertial                                    # 太阳方向模型：固定于惯性系（假设太阳方向在仿真期间不变）
+    initial_direction_n: [1.0, 0.2, 0.1]                     # 惯性系 N 下的太阳方向初始单位矢量，仿真中会归一化
+
+  # 星食（地影）检测配置
+  eclipse:
+    enabled: true                                            # 是否启用星食检测，启用后航天器进入地影时光压力矩将置零
+
+  # 地磁场模型配置
+  magnetic_field:
+    model: centered_dipole                                   # 磁场模型：中心磁偶极子模型
+    dipole_moment_n_a_m2: [0.0, 0.0, 7.94e22]               # 惯性系 N 下的磁偶极矩矢量，单位：A·m²（典型地球磁矩沿Z轴）
+
+  # 大气密度模型配置
+  atmosphere:
+    reference_density_kg_m3: 3.5e-12                         # 参考高度处的大气密度，单位：kg/m³
+    reference_altitude_m: 400000.0                           # 参考高度，单位：米（对应典型LEO轨道高度）
+    scale_height_m: 60000.0                                  # 大气标高，单位：米（密度随高度指数衰减的尺度）
+
+  # 太阳光压模型配置
+  solar_radiation:
+    pressure_n_m2: 4.56e-6                                   # 1AU处太阳光压常数，单位：N/m²
+    reflectivity_coefficient: 1.3                            # 表面反射系数（无量纲），范围0~2，典型值1.3代表部分吸收部分反射
